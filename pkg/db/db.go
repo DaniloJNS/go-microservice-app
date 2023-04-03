@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -14,22 +15,13 @@ func StartDB() (*pg.DB, error) {
 		err  error
 	)
 
-  log.Printf("Starting connection with DATABASE...\n")
-	if os.Getenv("ENV") == "PROD" {
-		opts, err = pg.ParseURL(os.Getenv("DATABASE_URL"))
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		opts = &pg.Options{
-			//default port
-			//depends on the db service from docker compose
-			Addr:     "db:5432",
-			User:     "postgres",
-			Password: "postgres",
-			Database: "postgres",
+	log.Printf("Starting connection with DATABASE...\n")
 
-		}
+	opts = &pg.Options{
+		Addr:     fmt.Sprint(getEnvWithDefault("POSTGRES_HOST", "db"), ":", getEnvWithDefault("POSTGRES_PORT", "5432")),
+		User:     getEnvWithDefault("POSTGRES_USER", "postgres"),
+		Password: getEnvWithDefault("POSTGRES_PASSWORD", "postgres"),
+		Database: getEnvWithDefault("POSTGRES_DATABASE", "postgres"),
 	}
 
 	// Start connection in DB
@@ -64,4 +56,12 @@ func StartDB() (*pg.DB, error) {
 
 	// return the db connection
 	return db, err
+}
+
+func getEnvWithDefault(envName string, defaultValue string) string {
+	envValue, envDefined := os.LookupEnv(envName)
+	if envDefined {
+		return envValue
+	}
+	return defaultValue
 }
